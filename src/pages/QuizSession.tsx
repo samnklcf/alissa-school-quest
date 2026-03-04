@@ -15,6 +15,7 @@ const QuizSession = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [result, setResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     quizAPI.get(id!).then(r => {
@@ -37,12 +38,18 @@ const QuizSession = () => {
         setSelected(null);
         setShowFeedback(false);
       } else {
-        quizAPI.submit(id!, newAnswers).then(r => setResult(r.data.data || r.data));
+        setSubmitting(true);
+        quizAPI.submit(id!, newAnswers).then(r => { setResult(r.data.data || r.data); setSubmitting(false); }).catch(() => setSubmitting(false));
       }
     }, 1200);
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-dvh"><i className="fa-solid fa-spinner fa-spin text-primary text-2xl" /></div>;
+  if (loading || submitting) return (
+    <div className="flex flex-col items-center justify-center min-h-dvh gap-3">
+      <i className="fa-solid fa-spinner fa-spin text-primary text-2xl" />
+      {submitting && <p className="text-sm text-muted-foreground">Envoi des réponses...</p>}
+    </div>
+  );
 
   if (result) {
     const pct = result.pourcentage;

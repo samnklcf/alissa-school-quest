@@ -13,14 +13,18 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ telephone: '', langue_gabonaise: '' });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => eleveAPI.profile().then(r => r.data.data || r.data) });
 
-  const handleLogout = async () => { await logout(); navigate('/welcome'); };
+  const handleLogout = async () => { setLoggingOut(true); try { await logout(); navigate('/welcome'); } finally { setLoggingOut(false); } };
   const openEdit = () => { setEditForm({ telephone: profile?.telephone || '', langue_gabonaise: profile?.langue_gabonaise || '' }); setEditing(true); };
   const saveEdit = async () => {
+    setSaving(true);
     try { await eleveAPI.updateProfile(editForm); queryClient.invalidateQueries({ queryKey: ['profile'] }); setEditing(false); toast({ title: 'Profil mis à jour' }); }
     catch { toast({ title: 'Erreur', variant: 'destructive' }); }
+    finally { setSaving(false); }
   };
 
   const initials = `${(profile?.prenom || '')[0] || ''}${(profile?.nom || '')[0] || ''}`.toUpperCase();
@@ -92,8 +96,10 @@ const Profile = () => {
             <h3 className="font-gaming text-base text-foreground mb-2">Se déconnecter ?</h3>
             <p className="text-sm text-muted-foreground mb-6">Tu devras te reconnecter pour accéder à ton compte.</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 h-11 border border-border rounded-xl text-sm text-foreground">Annuler</button>
-              <button onClick={handleLogout} className="flex-1 h-11 bg-destructive text-primary-foreground rounded-xl text-sm font-semibold">Déconnexion</button>
+              <button onClick={() => setShowLogoutConfirm(false)} disabled={loggingOut} className="flex-1 h-11 border border-border rounded-xl text-sm text-foreground disabled:opacity-50">Annuler</button>
+              <button onClick={handleLogout} disabled={loggingOut} className="flex-1 h-11 bg-destructive text-primary-foreground rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+                {loggingOut ? <><i className="fa-solid fa-spinner fa-spin" /> Déconnexion...</> : 'Déconnexion'}
+              </button>
             </div>
           </div>
         </div>
@@ -113,8 +119,10 @@ const Profile = () => {
               </select>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setEditing(false)} className="flex-1 h-11 border border-border rounded-xl text-sm">Annuler</button>
-              <button onClick={saveEdit} className="flex-1 h-11 bg-primary text-primary-foreground rounded-xl text-sm font-semibold">Enregistrer</button>
+              <button onClick={() => setEditing(false)} disabled={saving} className="flex-1 h-11 border border-border rounded-xl text-sm disabled:opacity-50">Annuler</button>
+              <button onClick={saveEdit} disabled={saving} className="flex-1 h-11 bg-primary text-primary-foreground rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+                {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Enregistrement...</> : 'Enregistrer'}
+              </button>
             </div>
           </div>
         </div>
