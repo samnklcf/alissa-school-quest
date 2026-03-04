@@ -24,6 +24,7 @@ const SubjectDetail = () => {
 
   const actions = [
     { icon: 'fa-brain', bg: 'bg-secondary', color: 'text-primary', title: 'Résumer un cours', desc: 'Générer un résumé IA', path: `/course/new/${id}` },
+    { icon: 'fa-book-open', bg: 'bg-blue-50', color: 'text-primary', title: 'Mes Cours', desc: 'Voir mes cours créés', path: `/courses/${id}` },
     { icon: 'fa-list-check', bg: 'bg-orange-50', color: 'text-warning', title: 'Mes Quizzes', desc: 'Voir tous mes quiz', path: `/quizzes/${id}` },
     { icon: 'fa-robot', bg: 'bg-emerald-50', color: 'text-success', title: 'Assistant', desc: 'Poser une question', path: `/assistant/${id}` },
     { icon: 'fa-folder-open', bg: 'bg-amber-50', color: 'text-accent', title: 'Ma Librairie', desc: 'PDFs et ressources', path: `/library/${id}` },
@@ -67,6 +68,31 @@ const SubjectDetail = () => {
             </button>
           ))}
         </div>
+
+        {courses && (Array.isArray(courses) ? courses : []).length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-gaming text-base text-foreground">Cours Récents</h2>
+              <button onClick={() => navigate(`/courses/${id}`)} className="text-xs text-primary flex items-center gap-1">
+                Tous les cours <i className="fa-solid fa-arrow-right text-[10px]" />
+              </button>
+            </div>
+            <div className="space-y-2">
+              {(Array.isArray(courses) ? courses : []).slice(0, 3).map((c: any) => (
+                <button key={c.id} onClick={() => navigate(`/course/${c.id}`)} className="w-full bg-card rounded-xl p-3.5 px-4 flex items-center gap-3 text-left">
+                  <div className="w-10 h-10 bg-secondary rounded-[10px] flex items-center justify-center">
+                    <i className="fa-solid fa-file-lines text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{c.titre}</p>
+                    <p className="text-[11px] text-inactive">{new Date(c.created_at).toLocaleDateString('fr')}</p>
+                  </div>
+                  <i className="fa-solid fa-chevron-right text-xs text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {quizzes && quizzes.length > 0 && (
           <div className="mb-6">

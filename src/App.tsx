@@ -12,6 +12,8 @@ import Dashboard from "./pages/Dashboard";
 import Subjects from "./pages/Subjects";
 import SubjectDetail from "./pages/SubjectDetail";
 import CourseGenerate from "./pages/CourseGenerate";
+import CourseDetail from "./pages/CourseDetail";
+import CoursesList from "./pages/CoursesList";
 import QuizSession from "./pages/QuizSession";
 import AssistantPage from "./pages/Assistant";
 import Library from "./pages/Library";
@@ -58,6 +60,8 @@ const AppRoutes = () => (
     </Route>
     <Route path="/subject/:id" element={<ProtectedRoute><SubjectDetail /></ProtectedRoute>} />
     <Route path="/course/new/:matiereId" element={<ProtectedRoute><CourseGenerate /></ProtectedRoute>} />
+    <Route path="/course/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+    <Route path="/courses/:matiereId" element={<ProtectedRoute><CoursesList /></ProtectedRoute>} />
     <Route path="/quiz/:id" element={<ProtectedRoute><QuizSession /></ProtectedRoute>} />
     <Route path="/assistant" element={<ProtectedRoute><AssistantPage /></ProtectedRoute>} />
     <Route path="/assistant/:matiereId" element={<ProtectedRoute><AssistantPage /></ProtectedRoute>} />
