@@ -4,7 +4,14 @@ import { Badge } from '@/types';
 import { motion } from 'framer-motion';
 
 const Achievements = () => {
-  const { data, isLoading } = useQuery({ queryKey: ['badges'], queryFn: () => eleveAPI.badges().then(r => r.data.data || r.data) });
+  const { data, isLoading } = useQuery({ queryKey: ['badges'], queryFn: () => eleveAPI.badges().then(r => {
+    const d = r.data.data || r.data;
+    // Handle various response shapes: array directly, or object with badges key
+    if (Array.isArray(d)) return d;
+    if (d?.badges && Array.isArray(d.badges)) return d.badges;
+    if (d?.obtained || d?.locked) return [...(d.obtained || []).map((b: any) => ({ ...b, obtained: true })), ...(d.locked || []).map((b: any) => ({ ...b, obtained: false }))];
+    return [];
+  })});
   const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: () => eleveAPI.profile().then(r => r.data.data || r.data) });
 
   const badges: Badge[] = Array.isArray(data) ? data : [];
