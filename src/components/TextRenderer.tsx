@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import katex from 'katex';
+import 'katex/dist/katex.min.css';
 
 interface Props {
   content: string;
@@ -7,10 +8,22 @@ interface Props {
 }
 
 function processInline(text: string): string {
+  // Display math \[...\]
+  text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+    try {
+      return katex.renderToString(math.trim(), { displayMode: true, throwOnError: false });
+    } catch { return math; }
+  });
   // Display math $$...$$
   text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
     try {
       return katex.renderToString(math.trim(), { displayMode: true, throwOnError: false });
+    } catch { return math; }
+  });
+  // Inline math \(...\)
+  text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
+    try {
+      return katex.renderToString(math.trim(), { displayMode: false, throwOnError: false });
     } catch { return math; }
   });
   // Inline math $...$
