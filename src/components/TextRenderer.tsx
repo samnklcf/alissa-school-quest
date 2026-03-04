@@ -7,17 +7,17 @@ interface Props {
   className?: string;
 }
 
-function processInline(text: string): string {
-  // Display math \[...\]
+function renderMath(text: string): string {
+  // Display math \[...\] (possibly multiline)
   text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
     try {
-      return katex.renderToString(math.trim(), { displayMode: true, throwOnError: false });
+      return `%%MATHBLOCK%%${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}%%/MATHBLOCK%%`;
     } catch { return math; }
   });
-  // Display math $$...$$
+  // Display math $$...$$ (possibly multiline)
   text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
     try {
-      return katex.renderToString(math.trim(), { displayMode: true, throwOnError: false });
+      return `%%MATHBLOCK%%${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}%%/MATHBLOCK%%`;
     } catch { return math; }
   });
   // Inline math \(...\)
@@ -27,12 +27,15 @@ function processInline(text: string): string {
     } catch { return math; }
   });
   // Inline math $...$
-  text = text.replace(/\$([^$]+?)\$/g, (_, math) => {
+  text = text.replace(/\$([^$\n]+?)\$/g, (_, math) => {
     try {
       return katex.renderToString(math.trim(), { displayMode: false, throwOnError: false });
     } catch { return math; }
   });
-  // Bold
+  return text;
+}
+
+function formatInline(text: string): string {
   text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   return text;
 }
@@ -40,7 +43,19 @@ function processInline(text: string): string {
 const TextRenderer = ({ content, className = '' }: Props) => {
   const rendered = useMemo(() => {
     if (!content) return '';
-    const lines = content.split('\n');
+
+    // Step 1: render ALL math on the full content before splitting lines
+    let processed = renderMath(content);
+
+    // Step 2: extract math blocks so line splitting doesn't break them
+    const mathBlocks: string[] = [];
+    processed = processed.replace(/%%MATHBLOCK%%([\s\S]*?)%%\/MATHBLOCK%%/g, (_, block) => {
+      mathBlocks.push(block);
+      return `%%MB${mathBlocks.length - 1}%%`;
+    });
+
+    // Step 3: line-by-line structural formatting
+    const lines = processed.split('\n');
     let html = '';
     let inList = false;
 
@@ -51,23 +66,31 @@ const TextRenderer = ({ content, className = '' }: Props) => {
         html += '<br/>';
         continue;
       }
+      // Restore math blocks in this line
+      const restore = (s: string) => s.replace(/%%MB(\d+)%%/g, (_, i) => `<div class="my-3 overflow-x-auto">${mathBlocks[parseInt(i)]}</div>`);
+
       if (trimmed.startsWith('## ')) {
         if (inList) { html += '</ul>'; inList = false; }
-        html += `<h3 class="font-semibold text-base text-foreground mt-4 mb-2">${processInline(trimmed.slice(3))}</h3>`;
+        html += `<h3 class="font-semibold text-base text-foreground mt-4 mb-2">${restore(formatInline(trimmed.slice(3)))}</h3>`;
         continue;
       }
       if (trimmed.startsWith('# ')) {
         if (inList) { html += '</ul>'; inList = false; }
-        html += `<h2 class="font-gaming text-lg text-foreground mt-4 mb-2" style="font-family:'Orbitron',sans-serif;font-weight:700">${processInline(trimmed.slice(2))}</h2>`;
+        html += `<h2 class="font-gaming text-lg text-foreground mt-4 mb-2" style="font-family:'Orbitron',sans-serif;font-weight:700">${restore(formatInline(trimmed.slice(2)))}</h2>`;
         continue;
       }
       if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
         if (!inList) { html += '<ul class="space-y-1 my-2">'; inList = true; }
-        html += `<li class="flex items-start gap-2 text-[15px] leading-relaxed" style="color:hsl(215 25% 27%)"><i class="fa-solid fa-chevron-right text-xs mt-1.5 shrink-0" style="color:hsl(204 60% 49%)"></i><span>${processInline(trimmed.slice(2))}</span></li>`;
+        html += `<li class="flex items-start gap-2 text-[15px] leading-relaxed" style="color:hsl(215 25% 27%)"><i class="fa-solid fa-chevron-right text-xs mt-1.5 shrink-0" style="color:hsl(204 60% 49%)"></i><span>${restore(formatInline(trimmed.slice(2)))}</span></li>`;
         continue;
       }
       if (inList) { html += '</ul>'; inList = false; }
-      html += `<p class="text-[15px] leading-relaxed my-1" style="color:hsl(215 25% 27%)">${processInline(trimmed)}</p>`;
+      // If this line is ONLY a math block placeholder, render it without wrapping in <p>
+      if (/^%%MB\d+%%$/.test(trimmed)) {
+        html += restore(trimmed);
+        continue;
+      }
+      html += `<p class="text-[15px] leading-relaxed my-1" style="color:hsl(215 25% 27%)">${restore(formatInline(trimmed))}</p>`;
     }
     if (inList) html += '</ul>';
     return html;
